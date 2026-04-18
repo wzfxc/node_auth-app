@@ -13,7 +13,9 @@ import { RegistrationPage } from './pages/RegistrationPage';
 import { AccountActivationPage } from './pages/AccountActivationPage';
 import { LoginPage } from './pages/LoginPage';
 import { RequireAuth } from './components/RequireAuth';
-import { UsersPage } from './pages/UsersPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordConfirmPage } from './pages/ResetPasswordConfirmPage';
 import { AxiosError } from 'axios';
 
 export function App() {
@@ -33,7 +35,7 @@ export function App() {
   const handleLogout = () => {
     logout()
       .then(() => {
-        navigate('/');
+        navigate('/login');
       })
       .catch((error: AxiosError<{ message?: string }>) => {
         setError(error.response?.data?.message ?? '');
@@ -52,8 +54,8 @@ export function App() {
             Home
           </NavLink>
 
-          <NavLink to="/users" className="navbar-item">
-            Users
+          <NavLink to="/profile" className="navbar-item">
+            Profile
           </NavLink>
         </div>
 
@@ -99,10 +101,13 @@ export function App() {
               element={<AccountActivationPage />}
             />
             <Route path="login" element={<LoginPage />} />
+            
+            <Route path="forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="reset-password/:token" element={<ResetPasswordConfirmPage />} />
 
-            {/* <Route path="/" element={<RequireAuth />}> */}
-              <Route path="users" element={<UsersPage />} />
-            {/* </Route> */}
+            <Route path="/" element={<RequireAuth />}>
+              <Route path="profile" element={<ProfilePage />} />
+            </Route>
           </Routes>
         </section>
 
