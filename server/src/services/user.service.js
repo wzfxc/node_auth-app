@@ -10,15 +10,15 @@ function getAllActivated() {
   })
 }
 
-function normalize({ id, email }) {
-  return { id, email };
+function normalize({ id, name, email }) {
+  return { id, name, email };
 }
 
 function findByEmail(email) {
   return User.findOne({ where: { email }})
 }
 
-async function register(email, password) {
+async function register(name, email, password) {
   const activationToken = uuidv4();
 
   const existUser = await findByEmail(email);
@@ -29,8 +29,24 @@ async function register(email, password) {
     })
   }
 
-  await User.create({ email, password, activationToken })
+  await User.create({ name, email, password, activationToken })
   await emailService.sendActivationEmail(email, activationToken)
+};
+
+async function createResetToken(email) {
+  const token = uuidv4();
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+  const user = await User.findOne({ where: { email }});
+
+  user.resetToken = token;
+  user.resetTokenExpires = expiresAt;
+
+  await user.save();
+
+  await emailService.sendPasswordResetEmail(email, token);
+
+  return token;
 }
 
 export const userService = {
@@ -38,4 +54,5 @@ export const userService = {
   normalize,
   findByEmail,
   register,
+  createResetToken,
 }

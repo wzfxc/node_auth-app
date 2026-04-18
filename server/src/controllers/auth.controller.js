@@ -5,7 +5,6 @@ import { ApiError } from "../exceptions/api.error.js";
 import bcrypt from 'bcrypt';
 import { tokenService } from "../services/token.service.js";
 
-
 function validateEmail(value) {
   const EMAIL_PATTERN = /^[\w.+-]+@([\w-]+\.){1,3}[\w-]{2,}$/;
 
@@ -18,21 +17,26 @@ const validatePassword = (value) => {
   if (value.length < 6) return 'At least 6 characters';
 };
 
+const validateName = (value) => {
+  if (!value) return 'Name is required';
+};
+
 const register = async (req, res) => {
-  const { email, password } = req.body;
+  const { name, email, password } = req.body;
 
   const errors = {
+    name: validateName(name),
     email: validateEmail(email),
     password: validatePassword(password),
   }
 
-  if (errors.email || errors.password) {
+  if (errors.email || errors.password || errors.name) {
     throw ApiError.badRequest('bad request', errors)
   }
 
   const hashedPass = await bcrypt.hash(password, 10)
 
-  await userService.register(email, hashedPass);
+  await userService.register(name, email, hashedPass);
   res.send({ message: 'OK' });
 }
 
@@ -112,10 +116,46 @@ const logout = async (req, res) => {
   res.sendStatus(204);
 }
 
+const requestResetPassword = async (req, res) => {
+  const { email } = req.body;
+
+  const emailExist = userService.findByEmail(email);
+
+  if (!emailExist) {
+    throw ApiError.badRequest('No such email registered');
+  }
+
+  await userService.createResetToken(email);
+  res.sendStatus(200);
+}
+
+const resetPassword = async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  const user = await User.findOne({ where: { resetToken: token }});
+
+  if (!user) {
+    res.sendStatus(404);
+
+    return;
+  }
+
+  user.resetToken = null;
+  user.resetTokenExpires = null;
+  user.password = await bcrypt.hash(password, 10);
+
+  await user.save();
+
+  res.sendStatus(200);
+}
+
 export const authController = {
   register,
   activate,
   login,
   refresh,
   logout,
+  requestResetPassword,
+  resetPassword,
 }
